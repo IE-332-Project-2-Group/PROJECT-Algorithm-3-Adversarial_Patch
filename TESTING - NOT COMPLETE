@@ -1,0 +1,104 @@
+library(tidyverse)
+library(keras)
+library(tensorflow)
+library(reticulate)
+
+setwd("/Users/mohamedabuelreish")
+
+# Define Budget 
+budget_pct <- 0.01
+pixel_num <- prod(dim(image))
+budget <- round(budget_pct * pixel_num)
+
+# Load model
+model_list <- load_model_tf("./dandelion_model")
+model <- model_list
+
+# Define target size
+target_size <- c(224, 224)
+
+# Read the noise image and make it transparent
+noise_img <- image_load("noise.jpg", target_size = target_size) %>%
+  image_to_array() %>%
+  array_reshape(dim = c(1, dim(.))) %>%
+  array_reshape() / 255
+noise_img <- image_overlay(noise_img, alpha = 0.2)
+
+# Loop through grass images
+f <- list.files("./grass")
+res <- data.frame(file = character(), class = character(), percent_dandelion = numeric(), percent_grass = numeric(), stringsAsFactors = FALSE)
+for (i in f) {
+  # Load image and resize
+  test_image <- image_load(paste("./grass/", i, sep = ""), target_size = target_size)
+  
+  # Add noise image
+  test_image <- image_overlay(test_image, noise_img)
+  
+  # Convert to array and normalize
+  x <- image_to_array(test_image)
+  x <- array_reshape(x, c(1, dim(x)[1], dim(x)[2], dim(x)[3]))
+  x <- x / 255
+  
+  # Make prediction
+  pred <- model %>% predict(x)
+  
+  # Append results to data frame
+  if (pred[1,2] < 0.50) {
+    res <- rbind(res, data.frame(file = i, class = "not_grass", percent_dandelion = pred[1,1], percent_grass = 1- pred[1,1]))
+  } else {
+    res <- rbind(res, data.frame(file = i, class = "grass", percent_dandelion = pred[1,1], percent_grass = 1 - pred[1,1]))
+  }
+}
+
+# Loop through dandelion images
+f <- list.files("./dandelions")
+for (i in f) {
+  # Load image and resize
+  test_image <- image_load(paste("./dandelions/", i, sep = ""), target_size = target_size)
+  
+  # Add noise image
+  test_image <- image_overlay(test_image, noise_img)
+  
+  # Convert to array and normalize
+  x <- image_to_array(test_image)
+  x <- array_reshape(x, c(1, dim(x)[1], dim(x)[2], dim(x)[3]))
+  x <- x / 255
+  
+  # Make prediction
+  pred <- model %>% predict(x)
+  
+  # Append results to data frame
+  if (pred[1,2] < 0.50) {
+    res <- rbind(res, data.frame(file = i, class = "not_grass", percent_dandelion = pred[1,1], percent_grass = 1- pred[1,1]))
+  } else {
+    res <- rbind(res, data.frame(file = i, class = "grass", percent_dandelion = pred[1,1], percent_grass = 1 - pred[1,1]))
+  }
+}
+
+# Loop through dandelion images
+f <- list.files("./dandelions")
+for (i in f) {
+  # Load image and resize
+  test_image <- image_load(paste("./dandelions/", i, sep = ""), target_size = target_size)
+  
+  # Add noise image
+  test_image <- image_overlay(test_image, noise_img)
+  
+  # Convert to array and normalize
+  x <- image_to_array(test_image)
+  x <- array_reshape(x, c(1, dim(x)[1], dim(x)[2], dim(x)[3]))
+  x <- x / 255
+  
+  # Make prediction
+  pred <- model %>% predict(x)
+  
+  # Append results to data frame
+  if (pred[1,1] < 0.50) {
+    res <- rbind(res, data.frame(file = i, class = "not_dandelion", percent_dandelion = 1 - pred[1,1], percent_grass = pred[1,1]))
+  } else {
+    res <- rbind(res, data.frame(file = i, class = "dandelion", percent_dandelion = pred[1,1], percent_grass = 1 - pred[1,1]))
+  }
+}
+
+# Print results
+print(res)
