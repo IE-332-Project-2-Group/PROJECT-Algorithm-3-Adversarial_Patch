@@ -1,0 +1,16 @@
+library(jpeg)
+library(abind)
+
+img.logo = readJPEG("grass.jpg")
+img.logo = abind(img.logo, img.logo[,,1]) # add an alpha channel
+
+img.random = img.logo
+img.random[] = runif(prod(dim(img.random))) # this image is random colors
+
+img.logo[,,4] = 0.5  # set alpha to semi-transparent
+img.random[,,4] = 1  # set alpha to 1 (opaque)
+
+par(mai=c(0,0,0,0))
+plot.new()
+rasterImage(img.random, 0, 0, 1, 1)
+rasterImage(img.logo,   0, 0, 1, 1)
