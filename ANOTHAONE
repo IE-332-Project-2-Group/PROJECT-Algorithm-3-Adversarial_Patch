@@ -1,0 +1,35 @@
+library(jpeg)
+library(abind)
+
+setwd("/Users/mohamedabuelreish")
+
+folders <- c("grass", "dandelion")
+
+for (folder in folders) { # loop over each folder
+  setwd(folder) # set working directory to the current folder
+  
+  files <- list.files(pattern = ".jpg") # get a list of all .jpg files in the folder
+  
+  for (file in files) { # loop over each file in the list
+    
+    img.logo <- readJPEG(file)
+    img.logo <- abind(img.logo, img.logo[,,1]) # add an alpha channel
+    
+    img.random <- img.logo
+    img.random[] <- runif(prod(dim(img.random))) # this image is random colors
+    
+    img.logo[,,4] <- 0.5  # set alpha to semi-transparent
+    img.random[,,4] <- 1  # set alpha to 1 (opaque)
+    
+    par(mai=c(0,0,0,0))
+    plot.new() # create the plot before saving the image
+    
+    rasterImage(img.random, 0, 0, 1, 1)
+    rasterImage(img.logo,   0, 0, 1, 1)
+    
+    # save the altered image with a new name
+    new_name <- paste0("altered_", file)
+    writeJPEG(img.random, quality = 100)
+    test_array <- image_to_array(new_name)
+  }
+}
