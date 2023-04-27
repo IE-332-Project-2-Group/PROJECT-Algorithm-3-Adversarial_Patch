@@ -9,16 +9,12 @@ library(grid)
 
 setwd("/Users/mohamedabuelreish")
 
-apply_algorithm2 <- function(img_path, noise_path, target_size) {
-  img <- readJPEG(img_path)
+apply_algorithm2 <- function(img_path) {
+  img <- readPNG("NOISE.png")
   img <- img[,,1:3]
-  noise <- readPNG(noise_path)
-  noise <- noise[,,1:3]
-  noise <- array_reshape(noise, dim = target_size %>% c(3))
-  alpha <- array(runif(prod(dim(img))), dim(img)[1:2])
-  stopifnot(dim(alpha) == dim(img)[1:2])
-  img <- alpha * img + (1 - alpha) * noise
-  img <- abind(img, alpha/255, along = 3)
+  img[] <- runif(prod(dim(img)))
+  alpha <- array(0.99, dim(img)[1:2]) 
+  img <- abind(img, alpha/1, along = 3) 
   img <- rasterGrob(img, interpolate=TRUE)
   return(img)
 }
@@ -35,16 +31,15 @@ for (folder in folders) {
   dir.create(paste0("./", folder, "_modified"), showWarnings = FALSE)
   for (i in f){
     img_path <- paste0("./", folder, "/", i)
-    noise_path <- "./NOISE.jpeg"
-    img_mod <- apply_algorithm2(img_path, noise_path, target_size)
-    png(paste0("./", folder, "_modified/", i), width = target_size[1], height = target_size[2])
+    img_mod <- apply_algorithm2(img_path)
+    png(paste0("./", folder, "_modified/", i), width = 224, height = 224)
     grid.draw(img_mod)
     dev.off()
     
     test_image <- image_load(paste0("./", folder, "_modified/", i),
-                             target_size = target_size[1:2])
+                             target_size = target_size)
     x <- image_to_array(test_image)
-    x <- array_reshape(x, c(1, target_size[1], target_size[2], 3))
+    x <- array_reshape(x, c(1, dim(x)))
     x <- x/255
     pred <- model %>% predict(x)
     
@@ -55,21 +50,22 @@ for (folder in folders) {
     }
   }
 }
+
 folders <- c("dandelions")
 for (folder in folders) {
   f <- list.files(paste0("./", folder))
   dir.create(paste0("./", folder, "_modified"), showWarnings = FALSE)
   for (i in f){
     img_path <- paste0("./", folder, "/", i)
-    img_mod <- apply_algorithm2(img_path, "./NOISE.jpeg", target_size)
-    png(paste0("./", folder, "_modified/", i), width = target_size[1], height = target_size[2])
+    img_mod <- apply_algorithm2(img_path)
+    png(paste0("./", folder, "_modified/", i), width = 224, height = 224)
     grid.draw(img_mod)
     dev.off()
     
     test_image <- image_load(paste0("./", folder, "_modified/", i),
-                             target_size = target_size[1:2])
+                             target_size = target_size)
     x <- image_to_array(test_image)
-    x <- array_reshape(x, c(1, target_size[1], target_size[2], 3))
+    x <- array_reshape(x, c(1, dim(x)))
     x <- x/255
     pred <- model %>% predict(x)
     
